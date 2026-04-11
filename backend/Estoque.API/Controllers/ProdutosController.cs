@@ -43,19 +43,18 @@ namespace Estoque.API.Controllers
         }
 
         // PATCH: api/produtos/1/atualizar-saldo
-        // Este endpoint será chamado pelo Faturamento para abater o estoque
         [HttpPatch("{id}/atualizar-saldo")]
         public async Task<IActionResult> AtualizarSaldo(int id, [FromBody] int quantidadeUtilizada)
         {
             var produto = await _context.Produtos.FindAsync(id);
             if (produto == null) return NotFound();
 
-            if (produto.Saldo < quantidadeUtilizada)
+            if (produto.QuantidadeEstoque < quantidadeUtilizada)
             {
                 return BadRequest(new { message = "Saldo insuficiente em estoque." });
             }
 
-            produto.Saldo -= quantidadeUtilizada;
+            produto.QuantidadeEstoque -= quantidadeUtilizada;
             
             try
             {
@@ -67,6 +66,19 @@ namespace Estoque.API.Controllers
             }
 
             return Ok(produto);
+        }
+        
+        // DELETE: api/produtos/1
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteProduto(int id)
+        {
+            var produto = await _context.Produtos.FindAsync(id);
+            if (produto == null) return NotFound();
+
+            _context.Produtos.Remove(produto);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
         }
     }
 }

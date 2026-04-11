@@ -9,8 +9,13 @@ namespace Faturamento.API.Models
         
         public int NotaFiscalId { get; set; }
         
+        [Required]
         public int ProdutoId { get; set; } 
         
+        [Required]
         public int Quantidade { get; set; }
+
+        [Required]
+        public decimal PrecoUnitario { get; set; }
     }
 }

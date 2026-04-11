@@ -1,12 +1,22 @@
-import { Component, signal } from '@angular/core';
+import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { NavbarComponent } from './components/navbar/navbar.component';
+import { ToastContainerComponent } from './components/toast-container/toast-container.component';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet],
-  templateUrl: './app.html',
-  styleUrl: './app.css'
+  standalone: true,
+  imports: [RouterOutlet, NavbarComponent, ToastContainerComponent],
+  template: `
+    <div class="animated-bg"></div>
+    <app-navbar />
+    <main style="min-height: calc(100vh - 64px);">
+      <router-outlet />
+    </main>
+    <app-toast-container />
+  `,
+  styles: [`
+    :host { display: block; }
+  `]
 })
-export class App {
-  protected readonly title = signal('frontend');
-}
+export class App {}
