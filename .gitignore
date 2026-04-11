@@ -1,0 +1,20 @@
+# Node / Angular
+node_modules/
+dist/
+out/
+.angular/
+
+# Visual Studio / .NET
+[Bb]in/
+[Oo]bj/
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
