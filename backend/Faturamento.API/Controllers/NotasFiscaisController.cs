@@ -1,5 +1,6 @@
 using Faturamento.API.Data;
 using Faturamento.API.Models;
+using Faturamento.API.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Text;
@@ -13,12 +14,14 @@ namespace Faturamento.API.Controllers
     {
         private readonly AppDbContext _context;
         private readonly HttpClient _httpClient;
+        private readonly GroqService _groqService;
 
-        public NotasFiscaisController(AppDbContext context, IHttpClientFactory httpClientFactory, IConfiguration configuration)
+        public NotasFiscaisController(AppDbContext context, IHttpClientFactory httpClientFactory, IConfiguration configuration, GroqService groqService)
         {
             _context = context;
             _httpClient = httpClientFactory.CreateClient();
             _httpClient.BaseAddress = new Uri(configuration["ServiceUrls:EstoqueApi"]!);
+            _groqService = groqService;
         }
 
         [HttpGet]
@@ -63,6 +66,7 @@ namespace Faturamento.API.Controllers
             }
             }
             nota.Status = StatusNota.Fechada;
+            nota.ResumoIA = await _groqService.GerarResumoNotaAsync(nota);
             await _context.SaveChangesAsync();
             return Ok(new { message = "Nota impressa e fechada com sucesso!", nota});
          }

@@ -22,5 +22,7 @@ namespace Faturamento.API.Models
         public DateTime DataEmissao { get; set; } = DateTime.UtcNow;
 
         public List<ItemNota> Itens { get; set; } = new();
+
+        public string? ResumoIA {get; set;}
     }
 }

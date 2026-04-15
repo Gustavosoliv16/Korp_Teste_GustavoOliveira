@@ -12,6 +12,7 @@ out/
 *.suo
 *.userosscache
 *.sln.docstates
+**/Faturamento.API/appsettings.Development.json
 
 # IDE / OS
 .idea/
