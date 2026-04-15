@@ -42,6 +42,42 @@ namespace Estoque.API.Controllers
             return CreatedAtAction(nameof(GetProduto), new { id = produto.Id }, produto);
         }
 
+        // PUT: api/produtos/1
+        [HttpPut("{id}")]
+        public async Task<IActionResult> PutProduto(int id, Produto produto)
+        {
+            var p = await _context.Produtos.FindAsync(id);
+            if (p == null) return NotFound();
+
+            p.Nome = produto.Nome;
+            p.Descricao = produto.Descricao;
+            p.Preco = produto.Preco;
+            p.QuantidadeEstoque = produto.QuantidadeEstoque;
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!ProdutoExists(id))
+                {
+                    return NotFound();
+                }
+                else
+                {
+                    throw;
+                }
+            }
+
+            return Ok(p);
+        }
+
+        private bool ProdutoExists(int id)
+        {
+            return _context.Produtos.Any(e => e.Id == id);
+        }
+
         // PATCH: api/produtos/1/atualizar-saldo
         [HttpPatch("{id}/atualizar-saldo")]
         public async Task<IActionResult> AtualizarSaldo(int id, [FromBody] int quantidadeUtilizada)

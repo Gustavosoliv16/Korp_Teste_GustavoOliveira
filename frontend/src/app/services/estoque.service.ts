@@ -34,6 +34,12 @@ export class EstoqueService {
     );
   }
 
+  updateProduto(id: number, dto: CreateProdutoDto): Observable<Produto> {
+    return this.http.put<Produto>(`${this.baseUrl}/${id}`, dto).pipe(
+      catchError(this.handleError)
+    );
+  }
+
   private handleError(error: HttpErrorResponse): Observable<never> {
     return throwError(() => error);
   }

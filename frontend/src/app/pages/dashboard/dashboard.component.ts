@@ -5,167 +5,198 @@ import { FaturamentoService } from '../../services/faturamento.service';
 import { EstoqueService } from '../../services/estoque.service';
 import { ToastService } from '../../services/toast.service';
 import { NotaFiscal, Produto } from '../../models/models';
+import { ZardCardComponent } from '@/shared/components/card';
+import { ZardBadgeComponent } from '@/shared/components/badge';
+import { ZardButtonComponent } from '@/shared/components/button';
+import { NgIcon, provideIcons } from '@ng-icons/core';
+import { 
+  lucidePackage, 
+  lucideFileText, 
+  lucideCheckCircle, 
+  lucideDollarSign, 
+  lucidePlus,
+  lucideArrowRight,
+  lucideActivity
+} from '@ng-icons/lucide';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [RouterLink, CurrencyPipe, DatePipe],
+  imports: [RouterLink, CurrencyPipe, DatePipe, ZardCardComponent, ZardBadgeComponent, ZardButtonComponent, NgIcon],
+  providers: [
+    provideIcons({ 
+      lucidePackage, 
+      lucideFileText, 
+      lucideCheckCircle, 
+      lucideDollarSign, 
+      lucidePlus,
+      lucideArrowRight,
+      lucideActivity
+    })
+  ],
   template: `
-    <div class="page-enter" style="padding: 2rem; max-width: 1280px; margin: 0 auto;">
-
+    <div class="space-y-8">
       <!-- Header -->
-      <div style="margin-bottom: 2.5rem;">
-        <p style="color: var(--text-muted); font-size: 0.875rem; margin: 0 0 0.375rem;">Bem-vindo ao</p>
-        <h1 style="font-family: var(--font-tight); font-size: 2rem; font-weight: 800; letter-spacing: -0.04em; margin: 0;">
-          Sistema de Notas Fiscais
-          <span class="gradient-text"> Eletrônicas</span>
-        </h1>
-        <p style="color: var(--text-secondary); margin: 0.5rem 0 0; font-size: 0.9375rem;">
+      <div>
+        <h2 class="text-3xl font-bold tracking-tight">Dashboard</h2>
+        <p class="text-muted-foreground">
           Gerencie seu estoque e emita notas fiscais com total controle e rastreabilidade.
         </p>
       </div>
 
       <!-- Stats Cards -->
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
-
+      <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <!-- Total Produtos -->
-        <div class="glass-card stat-card">
-          <div class="stat-icon" style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M20 7H4C2.89543 7 2 7.89543 2 9V19C2 20.1046 2.89543 21 4 21H20C21.1046 21 22 20.1046 22 19V9C22 7.89543 21.1046 7 20 7Z" stroke="white" stroke-width="1.75" stroke-linecap="round"/><path d="M16 7V5C16 3.89543 15.1046 3 14 3H10C8.89543 3 8 3.89543 8 5V7" stroke="white" stroke-width="1.75" stroke-linecap="round"/></svg>
+        <z-card zTitle="Produtos Cadastrados" zDescription="Total de itens no estoque">
+          <div class="flex items-center gap-4">
+            <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <ng-icon name="lucidePackage" size="24" />
+            </div>
+            <div>
+              @if (loadingEstoque()) {
+                <div class="h-8 w-16 animate-pulse rounded bg-muted"></div>
+              } @else {
+                <div class="text-2xl font-bold">{{ produtos().length }}</div>
+              }
+            </div>
           </div>
-          <div>
-            <p class="stat-label">Produtos Cadastrados</p>
-            @if (loadingEstoque()) {
-              <div class="spinner" style="margin-top: 4px;"></div>
-            } @else {
-              <p class="stat-value">{{ produtos().length }}</p>
-            }
-          </div>
-        </div>
+        </z-card>
 
         <!-- Notas Abertas -->
-        <div class="glass-card stat-card">
-          <div class="stat-icon" style="background: linear-gradient(135deg, #10b981, #059669);">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M9 12H15M9 16H15M17 21H7C5.89543 21 5 20.1046 5 19V5C5 3.89543 5.89543 3 7 3H12.5858C12.851 3 13.1054 3.10536 13.2929 3.29289L18.7071 8.70711C18.8946 8.89464 19 9.149 19 9.41421V19C19 20.1046 18.1046 21 17 21Z" stroke="white" stroke-width="1.75" stroke-linecap="round"/></svg>
+        <z-card zTitle="Notas Abertas" zDescription="Aguardando fechamento">
+          <div class="flex items-center gap-4">
+            <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-yellow-500/10 text-yellow-500">
+              <ng-icon name="lucideFileText" size="24" />
+            </div>
+            <div>
+              @if (loadingNotas()) {
+                <div class="h-8 w-16 animate-pulse rounded bg-muted"></div>
+              } @else {
+                <div class="text-2xl font-bold">{{ notasAbertas() }}</div>
+              }
+            </div>
           </div>
-          <div>
-            <p class="stat-label">Notas Abertas</p>
-            @if (loadingNotas()) {
-              <div class="spinner" style="margin-top: 4px;"></div>
-            } @else {
-              <p class="stat-value" style="color: #34d399;">{{ notasAbertas() }}</p>
-            }
-          </div>
-        </div>
+        </z-card>
 
         <!-- Notas Fechadas -->
-        <div class="glass-card stat-card">
-          <div class="stat-icon" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8);">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M22 11.0857V12.0057C21.9988 14.1621 21.3005 16.2604 20.0093 17.9875C18.7182 19.7147 16.9028 20.9782 14.8354 21.5896C12.768 22.201 10.5573 22.1276 8.53447 21.3803C6.51168 20.633 4.78465 19.2518 3.61096 17.4428C2.43727 15.6338 1.87979 13.4938 2.02168 11.342C2.16356 9.19029 2.99721 7.14205 4.39828 5.5028C5.79935 3.86354 7.69279 2.72111 9.79619 2.24587C11.8996 1.77063 14.1003 1.98806 16.07 2.86572" stroke="white" stroke-width="2" stroke-linecap="round"/><path d="M22 4L12 14.01L9 11.01" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>
+        <z-card zTitle="Notas Fechadas" zDescription="Concluídas com sucesso">
+          <div class="flex items-center gap-4">
+            <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-green-500/10 text-green-500">
+              <ng-icon name="lucideCheckCircle" size="24" />
+            </div>
+            <div>
+              @if (loadingNotas()) {
+                <div class="h-8 w-16 animate-pulse rounded bg-muted"></div>
+              } @else {
+                <div class="text-2xl font-bold">{{ notasFechadas() }}</div>
+              }
+            </div>
           </div>
-          <div>
-            <p class="stat-label">Notas Fechadas</p>
-            @if (loadingNotas()) {
-              <div class="spinner" style="margin-top: 4px;"></div>
-            } @else {
-              <p class="stat-value" style="color: #818cf8;">{{ notasFechadas() }}</p>
-            }
-          </div>
-        </div>
+        </z-card>
 
         <!-- Total Faturado -->
-        <div class="glass-card stat-card">
-          <div class="stat-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <z-card zTitle="Total Faturado" zDescription="Soma das notas fechadas">
+          <div class="flex items-center gap-4">
+            <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-500/10 text-blue-500">
+              <ng-icon name="lucideDollarSign" size="24" />
+            </div>
+            <div>
+              @if (loadingNotas()) {
+                <div class="h-8 w-16 animate-pulse rounded bg-muted"></div>
+              } @else {
+                <div class="text-2xl font-bold">{{ totalFaturado() | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</div>
+              }
+            </div>
           </div>
-          <div>
-            <p class="stat-label">Total Faturado</p>
-            @if (loadingNotas()) {
-              <div class="spinner" style="margin-top: 4px;"></div>
-            } @else {
-              <p class="stat-value" style="color: #fcd34d;">{{ totalFaturado() | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</p>
-            }
-          </div>
-        </div>
+        </z-card>
       </div>
 
-      <!-- Quick Actions & Recent Notes Grid -->
-      <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 1.5rem;">
-
-        <!-- Quick Actions -->
-        <div class="glass-card" style="padding: 1.5rem;">
-          <h2 style="font-size: 1rem; font-weight: 600; margin: 0 0 1.25rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.06em; font-size: 0.75rem;">Ações rápidas</h2>
-          <div style="display: flex; flex-direction: column; gap: 0.625rem;">
-            <a routerLink="/emitir" class="quick-action-btn quick-action-primary">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-              Emitir Nova Nota Fiscal
-            </a>
-            <a routerLink="/estoque" class="quick-action-btn quick-action-secondary">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M20 7H4C2.89543 7 2 7.89543 2 9V19C2 20.1046 2.89543 21 4 21H20C21.1046 21 22 20.1046 22 19V9C22 7.89543 21.1046 7 20 7Z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/><path d="M16 7V5C16 3.89543 15.1046 3 14 3H10C8.89543 3 8 3.89543 8 5V7" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></svg>
-              Gerenciar Estoque
-            </a>
-            <a routerLink="/notas" class="quick-action-btn quick-action-secondary">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M9 12H15M9 16H15M17 21H7C5.89543 21 5 20.1046 5 19V5C5 3.89543 5.89543 3 7 3H12.5858C12.851 3 13.1054 3.10536 13.2929 3.29289L18.7071 8.70711C18.8946 8.89464 19 9.149 19 9.41421V19C19 20.1046 18.1046 21 17 21Z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></svg>
-              Ver Todas as Notas
-            </a>
-          </div>
-
-          <!-- Arquitetura Info -->
-          <div style="margin-top: 1.5rem; padding: 1rem; background: rgba(99,102,241,0.08); border-radius: 10px; border: 1px solid rgba(99,102,241,0.15);">
-            <p style="font-size: 0.75rem; color: #a5b4fc; font-weight: 600; margin: 0 0 0.5rem; text-transform: uppercase; letter-spacing: 0.06em;">Microsserviços</p>
-            <div style="display: flex; flex-direction: column; gap: 0.375rem;">
-              <div class="service-pill service-pill-ok">
-                <span class="dot dot-green"></span>
-                Faturamento API :5000
-              </div>
-              <div class="service-pill service-pill-ok">
-                <span class="dot dot-green"></span>
-                Estoque API :5001
-              </div>
-            </div>
-          </div>
-        </div>
-
+      <!-- Main Content -->
+      <div class="grid gap-6 md:grid-cols-7">
         <!-- Recent Notes -->
-        <div class="glass-card" style="padding: 1.5rem; overflow: hidden;">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem;">
-            <h2 style="font-size: 0.75rem; font-weight: 600; margin: 0; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.06em;">Notas Recentes</h2>
-            <a routerLink="/notas" style="font-size: 0.8125rem; color: var(--accent-primary); text-decoration: none; font-weight: 500;">Ver todas →</a>
-          </div>
-
+        <z-card class="md:col-span-4" zTitle="Notas Recentes" zDescription="As últimas notas fiscais geradas">
           @if (loadingNotas()) {
-            <div style="display: flex; align-items: center; justify-content: center; height: 160px;">
-              <div class="spinner" style="width: 32px; height: 32px; border-width: 3px;"></div>
+            <div class="space-y-3">
+              <div class="h-12 w-full animate-pulse rounded bg-muted"></div>
+              <div class="h-12 w-full animate-pulse rounded bg-muted"></div>
+              <div class="h-12 w-full animate-pulse rounded bg-muted"></div>
             </div>
           } @else if (notas().length === 0) {
-            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 160px; gap: 0.75rem;">
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" style="opacity: 0.3;"><path d="M9 12H15M9 16H15M17 21H7C5.89543 21 5 20.1046 5 19V5C5 3.89543 5.89543 3 7 3H12.5858C12.851 3 13.1054 3.10536 13.2929 3.29289L18.7071 8.70711C18.8946 8.89464 19 9.149 19 9.41421V19C19 20.1046 18.1046 21 17 21Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-              <p style="color: var(--text-muted); font-size: 0.875rem; margin: 0;">Nenhuma nota emitida ainda</p>
-              <a routerLink="/emitir" style="font-size: 0.8125rem; color: var(--accent-primary); text-decoration: none; font-weight: 500;">Emitir a primeira →</a>
+            <div class="flex h-[200px] flex-col items-center justify-center gap-2 text-center">
+              <ng-icon name="lucideFileText" size="40" class="text-muted-foreground/50" />
+              <p class="text-muted-foreground">Nenhuma nota emitida ainda</p>
+              <a z-button zType="link" routerLink="/emitir">Emitir a primeira nota</a>
             </div>
           } @else {
-            <div style="display: flex; flex-direction: column; gap: 0.625rem;">
+            <div class="space-y-4">
               @for (nota of recentNotas(); track nota.id) {
-                <div class="nota-row">
-                  <div style="display: flex; align-items: center; gap: 0.75rem; flex: 1; min-width: 0;">
-                    <div class="nota-num">NF-{{ nota.numeroSequencial.toString().padStart(4, '0') }}</div>
-                    <div style="min-width: 0;">
-                      <p style="font-size: 0.875rem; font-weight: 500; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ nota.nomeCliente }}</p>
-                      <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0;">{{ nota.dataEmissao | date:'dd/MM/yyyy':'':'pt-BR' }}</p>
+                <div class="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0">
+                  <div class="flex items-center gap-3 size-full overflow-hidden">
+                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted font-mono text-xs font-bold text-primary">
+                      NF
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <p class="text-sm font-medium leading-none truncate">{{ nota.nomeCliente }}</p>
+                      <p class="text-xs text-muted-foreground">
+                        Emitida em {{ nota.dataEmissao | date:'dd/MM/yyyy':'':'pt-BR' }}
+                      </p>
                     </div>
                   </div>
-                  <div style="display: flex; align-items: center; gap: 0.75rem; flex-shrink: 0;">
-                    <span class="badge" [class]="nota.status === 'Aberta' ? 'badge-aberta' : 'badge-fechada'">
-                       {{ nota.status }}
-                    </span>
-                    <span style="font-size: 0.875rem; font-weight: 600; color: var(--text-primary);">
+                  <div class="flex items-center gap-4 shrink-0">
+                    <z-badge [zType]="nota.status === 'Aberta' ? 'secondary' : 'default'" zShape="pill">
+                      {{ nota.status }}
+                    </z-badge>
+                    <span class="text-sm font-semibold">
                       {{ calcTotal(nota) | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}
                     </span>
                   </div>
                 </div>
               }
+              <a z-button zType="outline" class="w-full mt-4" routerLink="/notas">
+                Ver todas as notas
+                <ng-icon name="lucideArrowRight" size="14" class="ml-2" />
+              </a>
             </div>
           }
+        </z-card>
+
+        <!-- Quick Actions & Systems -->
+        <div class="flex flex-col gap-6 md:col-span-3">
+          <z-card zTitle="Ações Rápidas">
+            <div class="grid gap-3">
+              <a z-button routerLink="/emitir" class="w-full justify-start">
+                <ng-icon name="lucidePlus" size="18" class="mr-2" />
+                Emitir Nova Nota
+              </a>
+              <a z-button zType="outline" routerLink="/estoque" class="w-full justify-start">
+                <ng-icon name="lucidePackage" size="18" class="mr-2" />
+                Gerenciar Estoque
+              </a>
+            </div>
+          </z-card>
+
+          <z-card zTitle="Status do Sistema">
+            <div class="space-y-4">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <div class="h-2 w-2 rounded-full bg-green-500 animate-pulse"></div>
+                  <span class="text-sm font-medium">Faturamento API</span>
+                </div>
+                <span class="text-xs font-mono text-muted-foreground">:5000</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <div class="h-2 w-2 rounded-full bg-green-500 animate-pulse"></div>
+                  <span class="text-sm font-medium">Estoque API</span>
+                </div>
+                <span class="text-xs font-mono text-muted-foreground">:5001</span>
+              </div>
+              <div class="mt-4 pt-4 border-t flex items-center gap-2 text-muted-foreground">
+                <ng-icon name="lucideActivity" size="14" />
+                <span class="text-xs">Sistema Operacional</span>
+              </div>
+            </div>
+          </z-card>
         </div>
       </div>
     </div>
