@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, viewChild, TemplateRef, computed } from '@angular/core';
+import { Component, OnInit, inject, signal, TemplateRef, computed } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { EstoqueService } from '../../services/estoque.service';
@@ -65,7 +65,7 @@ import { ProductTableRowComponent } from './components/product-table-row.compone
             type="text" 
             [(ngModel)]="searchQuery"
             (ngModelChange)="currentPage.set(1)"
-            placeholder="Pesquisar produto por nome ou descrição..."
+            placeholder="Pesquisar por descrição ou código..."
             class="w-full h-11 pl-10 pr-4 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-inner"
           />
         </div>
@@ -81,11 +81,11 @@ import { ProductTableRowComponent } from './components/product-table-row.compone
         <table z-table>
           <thead z-table-header>
             <tr z-table-row>
-              <th z-table-head class="w-[80px]">ID</th>
-              <th z-table-head>Produto</th>
-              <th z-table-head class="hidden md:table-cell">Descrição</th>
+              <th z-table-head class="w-[80px]">Código</th>
+              <th z-table-head>Descrição</th>
+              <th z-table-head class="hidden md:table-cell">Detalhes</th>
               <th z-table-head class="text-right">Preço</th>
-              <th z-table-head class="text-center">Qtd. Estoque</th>
+              <th z-table-head class="text-center">Saldo</th>
               <th z-table-head class="w-[80px] text-right">Ações</th>
             </tr>
           </thead>

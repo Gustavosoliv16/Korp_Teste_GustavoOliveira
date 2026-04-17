@@ -86,6 +86,11 @@ namespace Faturamento.API.Controllers
                 return Ok(new { message = "Operação já realizada (Idempotência ativa).", nota});
             }
 
+            if (nota.Status != StatusNota.Aberta)
+            {
+                return BadRequest("Apenas notas fiscais com status 'Aberta' podem ser impressas.");
+            }
+
             foreach (var item in nota.Itens)
             { try
             {

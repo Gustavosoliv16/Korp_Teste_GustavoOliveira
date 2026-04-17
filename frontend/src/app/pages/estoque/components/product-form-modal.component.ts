@@ -12,7 +12,7 @@ import { CreateProdutoDto, Produto } from '../../../models/models';
   template: `
     <div class="grid gap-4 py-4">
       <div class="space-y-2">
-        <label class="text-sm font-medium leading-none text-zinc-700 dark:text-zinc-300" for="nome">Nome do Produto</label>
+        <label class="text-sm font-medium leading-none text-zinc-700 dark:text-zinc-300" for="nome">Descrição (Nome do Produto)</label>
         <input 
           id="nome" 
           z-input 
@@ -35,7 +35,7 @@ import { CreateProdutoDto, Produto } from '../../../models/models';
           />
         </div>
         <div class="space-y-2">
-          <label class="text-sm font-medium leading-none text-zinc-700 dark:text-zinc-300" for="qtd">Quantidade</label>
+          <label class="text-sm font-medium leading-none text-zinc-700 dark:text-zinc-300" for="qtd">Saldo (Qtd. Estoque)</label>
           <input 
             id="qtd" 
             z-input 
@@ -50,7 +50,7 @@ import { CreateProdutoDto, Produto } from '../../../models/models';
       </div>
       
       <div class="space-y-2">
-        <label class="text-sm font-medium leading-none text-zinc-700 dark:text-zinc-300" for="descricao">Descrição</label>
+        <label class="text-sm font-medium leading-none text-zinc-700 dark:text-zinc-300" for="descricao">Detalhes / Observações</label>
         <textarea 
           id="descricao" 
           z-input 

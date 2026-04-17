@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, inject, signal, computed } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
-import { CurrencyPipe, DecimalPipe } from '@angular/common';
+import { CurrencyPipe } from '@angular/common';
 import { FaturamentoService } from '../../services/faturamento.service';
 import { EstoqueService } from '../../services/estoque.service';
 import { ToastService } from '../../services/toast.service';

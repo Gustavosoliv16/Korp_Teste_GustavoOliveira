@@ -1,6 +1,5 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { Router } from '@angular/router';
-import { DatePipe, CurrencyPipe } from '@angular/common';
 import { FaturamentoService } from '../../services/faturamento.service';
 import { ToastService } from '../../services/toast.service';
 import { NotaFiscal } from '../../models/models';
@@ -9,26 +8,10 @@ import { ZardBadgeComponent } from '@/shared/components/badge';
 import { ZardButtonComponent } from '@/shared/components/button';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { 
-  lucideFileText, 
   lucideRefreshCcw, 
-  lucidePrinter, 
-  lucideCheckCircle, 
-  lucideClock, 
-  lucideCalendar,
-  lucideUser,
-  lucideHash,
-  lucideBot,
-  lucideChevronDown,
   lucideSearch,
-  lucideMoon,
-  lucideSun,
   lucideEdit,
-  lucidePlus,
-  lucideTrash2,
-  lucideSave,
-  lucideX
 } from '@ng-icons/lucide';
-import { ThemeService } from '../../services/theme.service';
 import { FormsModule } from '@angular/forms';
 import { EstoqueService } from '../../services/estoque.service';
 import { Produto } from '../../models/models';
