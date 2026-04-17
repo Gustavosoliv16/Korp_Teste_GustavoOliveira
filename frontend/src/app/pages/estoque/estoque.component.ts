@@ -1,14 +1,12 @@
-import { Component, OnInit, inject, signal, viewChild, TemplateRef } from '@angular/core';
+import { Component, OnInit, inject, signal, viewChild, TemplateRef, computed } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { CurrencyPipe } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { EstoqueService } from '../../services/estoque.service';
 import { ToastService } from '../../services/toast.service';
 import { Produto, CreateProdutoDto } from '../../models/models';
 import { ZardCardComponent } from '@/shared/components/card';
-import { ZardTableImports } from '@/shared/components/table';
+import { ZardTableComponent, ZardTableHeaderComponent, ZardTableBodyComponent, ZardTableHeadComponent } from '@/shared/components/table/table.component';
 import { ZardButtonComponent } from '@/shared/components/button';
-import { ZardInputDirective } from '@/shared/components/input';
-import { ZardBadgeComponent } from '@/shared/components/badge';
 import { ZardDialogService } from '@/shared/components/dialog/dialog.service';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { 
@@ -18,21 +16,29 @@ import {
   lucideSearch, 
   lucideAlertCircle,
   lucidePackagePlus,
-  lucidePencil
+  lucidePencil,
+  lucideChevronLeft,
+  lucideChevronRight
 } from '@ng-icons/lucide';
+
+import { ProductFormModalComponent } from './components/product-form-modal.component';
+import { ProductTableRowComponent } from './components/product-table-row.component';
 
 @Component({
   selector: 'app-estoque',
   standalone: true,
   imports: [
+    CommonModule,
     FormsModule, 
-    CurrencyPipe, 
     ZardCardComponent, 
-    ...ZardTableImports, 
+    ZardTableComponent,
+    ZardTableHeaderComponent,
+    ZardTableBodyComponent,
+    ZardTableHeadComponent,
     ZardButtonComponent, 
-    ZardInputDirective,
-    ZardBadgeComponent,
-    NgIcon
+    NgIcon,
+    ProductFormModalComponent,
+    ProductTableRowComponent
   ],
   providers: [
     provideIcons({ 
@@ -40,29 +46,38 @@ import {
       lucidePlus, 
       lucideTrash2, 
       lucideSearch, 
-      lucideAlertCircle,
-      lucidePackagePlus,
-      lucidePencil
+      lucideAlertCircle, 
+      lucidePackagePlus, 
+      lucidePencil,
+      lucideChevronLeft,
+      lucideChevronRight
     })
   ],
   template: `
     <div class="space-y-6">
-      <!-- Header -->
-      <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 class="text-3xl font-bold tracking-tight">Estoque</h2>
-          <p class="text-muted-foreground">
-            {{ produtos().length }} produto(s) cadastrado(s) no sistema.
-          </p>
+      <!-- Search and Actions -->
+      <div class="flex flex-col md:flex-row gap-4 items-center justify-between bg-white/50 dark:bg-zinc-900/50 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 backdrop-blur-sm shadow-sm transition-all">
+        <div class="relative w-full md:w-96 group">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-zinc-400 group-focus-within:text-primary transition-colors">
+            <ng-icon name="lucideSearch" size="18" />
+          </div>
+          <input 
+            type="text" 
+            [(ngModel)]="searchQuery"
+            (ngModelChange)="currentPage.set(1)"
+            placeholder="Pesquisar produto por nome ou descrição..."
+            class="w-full h-11 pl-10 pr-4 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-inner"
+          />
         </div>
-        <button z-button (click)="openAddModal(content)">
+        
+        <button z-button (click)="openAddModal(content)" class="w-full md:w-auto shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-transform">
           <ng-icon name="lucidePackagePlus" size="18" class="mr-2" />
           Novo Produto
         </button>
       </div>
 
       <!-- Main Table Card -->
-      <z-card class="overflow-hidden">
+      <z-card class="overflow-hidden border-zinc-200 dark:border-zinc-800 shadow-xl">
         <table z-table>
           <thead z-table-header>
             <tr z-table-row>
@@ -78,111 +93,87 @@ import {
             @if (loading()) {
               @for (i of [1,2,3,4,5]; track i) {
                 <tr z-table-row>
-                  <td z-table-cell><div class="h-4 w-8 animate-pulse rounded bg-muted"></div></td>
-                  <td z-table-cell><div class="h-4 w-32 animate-pulse rounded bg-muted"></div></td>
-                  <td z-table-cell class="hidden md:table-cell"><div class="h-4 w-48 animate-pulse rounded bg-muted"></div></td>
-                  <td z-table-cell><div class="ml-auto h-4 w-20 animate-pulse rounded bg-muted"></div></td>
-                  <td z-table-cell><div class="mx-auto h-6 w-12 animate-pulse rounded-full bg-muted"></div></td>
-                  <td z-table-cell><div class="ml-auto h-8 w-8 animate-pulse rounded bg-muted"></div></td>
+                  <td z-table-cell><div class="h-4 w-8 animate-pulse rounded bg-muted/50"></div></td>
+                  <td z-table-cell><div class="h-4 w-32 animate-pulse rounded bg-muted/50"></div></td>
+                  <td z-table-cell class="hidden md:table-cell"><div class="h-4 w-48 animate-pulse rounded bg-muted/50"></div></td>
+                  <td z-table-cell><div class="ml-auto h-4 w-20 animate-pulse rounded bg-muted/50"></div></td>
+                  <td z-table-cell><div class="mx-auto h-6 w-12 animate-pulse rounded-full bg-muted/50"></div></td>
+                  <td z-table-cell><div class="ml-auto h-8 w-8 animate-pulse rounded bg-muted/50"></div></td>
                 </tr>
               }
-            } @else if (produtos().length === 0) {
+            } @else if (pagedProdutos().length === 0) {
               <tr z-table-row>
-                <td z-table-cell colspan="6" class="h-32 text-center text-muted-foreground">
-                  Nenhum produto encontrado.
+                <td z-table-cell colspan="6" class="h-48 text-center">
+                  <div class="flex flex-col items-center justify-center opacity-40 py-8">
+                    <ng-icon name="lucideSearch" size="48" class="mb-2" />
+                    <p class="text-lg font-bold text-zinc-500">Nenhum produto encontrado</p>
+                    <p class="text-sm text-zinc-400">Tente ajustar o termo de pesquisa ou filtros.</p>
+                  </div>
                 </td>
               </tr>
             } @else {
-              @for (produto of produtos(); track produto.id) {
-                <tr z-table-row>
-                  <td z-table-cell class="font-mono text-xs text-muted-foreground">#{{ produto.id }}</td>
-                  <td z-table-cell class="font-medium">{{ produto.nome }}</td>
-                  <td z-table-cell class="hidden md:table-cell text-muted-foreground italic text-sm">
-                    {{ produto.descricao || '—' }}
-                  </td>
-                  <td z-table-cell class="text-right font-semibold">
-                    {{ produto.preco | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}
-                  </td>
-                  <td z-table-cell class="text-center">
-                    @if (produto.quantidadeEstoque === 0) {
-                      <z-badge zType="destructive" zShape="pill" class="animate-pulse shadow-sm shadow-destructive/20 px-3">
-                        <ng-icon name="lucideAlertCircle" size="14" class="mr-1" />
-                        ESGOTADO
-                      </z-badge>
-                    } @else {
-                      <z-badge [zType]="produto.quantidadeEstoque <= 5 ? 'destructive' : 'secondary'" zShape="pill">
-                        {{ produto.quantidadeEstoque }} un.
-                      </z-badge>
-                    }
-                  </td>
-                  <td z-table-cell class="text-right">
-                    <div class="flex justify-end gap-1">
-                      <button 
-                        z-button 
-                        zType="ghost" 
-                        zSize="sm" 
-                        class="text-primary hover:bg-primary/10"
-                        (click)="openEditModal(content, produto)"
-                      >
-                        <ng-icon name="lucidePencil" size="16" />
-                      </button>
-                      <button 
-                        z-button 
-                        zType="ghost" 
-                        zSize="sm" 
-                        class="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                        (click)="deleteProduto(produto)"
-                        [zLoading]="deleting() === produto.id"
-                      >
-                        <ng-icon name="lucideTrash2" size="16" />
-                      </button>
-                    </div>
-                  </td>
+              @for (produto of pagedProdutos(); track produto.id) {
+                <tr app-product-table-row
+                    [produto]="produto"
+                    [isDeleting]="deleting() === produto.id"
+                    (onEdit)="openEditModal(content, $event)"
+                    (onDelete)="deleteProduto($event)"
+                    class="group hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors">
                 </tr>
               }
             }
           </tbody>
         </table>
+
+        <!-- Pagination Footer -->
+        @if (totalPages() > 1) {
+          <div class="px-6 py-4 border-t border-zinc-100 dark:border-zinc-800 flex flex-col sm:flex-row items-center justify-between gap-4 bg-zinc-50/50 dark:bg-zinc-900/40">
+            <p class="text-xs text-zinc-500 font-medium">
+              Exibindo <span class="text-zinc-900 dark:text-zinc-100 font-bold">{{ (currentPage() - 1) * pageSize + 1 }}-{{ Math.min(currentPage() * pageSize, filteredProdutos().length) }}</span> 
+              de <span class="text-zinc-900 dark:text-zinc-100 font-bold">{{ filteredProdutos().length }}</span> produtos
+            </p>
+            
+            <div class="flex items-center gap-1">
+              <button 
+                z-button 
+                zType="outline" 
+                zSize="sm" 
+                [disabled]="currentPage() === 1"
+                (click)="currentPage.set(currentPage() - 1)"
+                class="h-9 w-9 p-0 rounded-lg hover:bg-primary hover:text-white transition-all"
+              >
+                <ng-icon name="lucideChevronLeft" size="20" />
+              </button>
+              
+              <div class="flex items-center gap-1 mx-4">
+                <span class="text-sm font-black text-primary">{{ currentPage() }}</span>
+                <span class="text-xs text-zinc-400 italic">/ {{ totalPages() }}</span>
+              </div>
+
+              <button 
+                z-button 
+                zType="outline" 
+                zSize="sm" 
+                [disabled]="currentPage() === totalPages()"
+                (click)="currentPage.set(currentPage() + 1)"
+                class="h-9 w-9 p-0 rounded-lg hover:bg-primary hover:text-white transition-all"
+              >
+                <ng-icon name="lucideChevronRight" size="20" />
+              </button>
+            </div>
+          </div>
+        }
       </z-card>
     </div>
 
-    <!-- Modal Template for Adding Product -->
+    <!-- Modal Template using the new component -->
     <ng-template #content let-dialogRef="dialogRef">
-      <div class="grid gap-4 py-4">
-        <div class="space-y-2">
-          <label class="text-sm font-medium leading-none" for="nome">Nome do Produto</label>
-          <input id="nome" z-input [(ngModel)]="form.nome" placeholder="Ex: Notebook Dell" />
-        </div>
-        <div class="grid grid-cols-2 gap-4">
-          <div class="space-y-2">
-            <label class="text-sm font-medium leading-none" for="preco">Preço (R$)</label>
-            <input id="preco" z-input type="number" [(ngModel)]="form.preco" placeholder="0.00" />
-          </div>
-          <div class="space-y-2">
-            <label class="text-sm font-medium leading-none" for="qtd">Quantidade</label>
-            <input 
-              id="qtd" 
-              z-input 
-              type="number" 
-              min="0" 
-              (keydown)="preventInvalidChars($event)" 
-              [(ngModel)]="form.quantidadeEstoque" 
-              placeholder="0" 
-            />
-          </div>
-        </div>
-        <div class="space-y-2">
-          <label class="text-sm font-medium leading-none" for="descricao">Descrição</label>
-          <textarea id="descricao" z-input [(ngModel)]="form.descricao" placeholder="Detalhes do produto..."></textarea>
-        </div>
-      </div>
-      
-      <div card-footer class="flex justify-end gap-2 pt-4">
-        <button z-button zType="outline" (click)="dialogRef.close()">Cancelar</button>
-        <button z-button (click)="salvarProduto(dialogRef)" [zLoading]="saving()">
-          {{ editingId() ? 'Atualizar Produto' : 'Salvar Produto' }}
-        </button>
-      </div>
+      <app-product-form-modal 
+        [produto]="editingProduto()" 
+        [saving]="saving()" 
+        (onSave)="salvarProduto($event, dialogRef)" 
+        (onCancel)="dialogRef.close()"
+      />
     </ng-template>
   `
 })
@@ -197,7 +188,33 @@ export class EstoqueComponent implements OnInit {
   deleting = signal<number | null>(null);
   editingId = signal<number | null>(null);
 
-  form: CreateProdutoDto = { nome: '', descricao: '', preco: 0, quantidadeEstoque: 0 };
+  // Search & Pagination Signals
+  searchQuery = signal('');
+  currentPage = signal(1);
+  pageSize = 15;
+  Math = Math; // Para usar no template
+
+  filteredProdutos = computed(() => {
+    const query = this.searchQuery().toLowerCase().trim();
+    if (!query) return this.produtos();
+    
+    return this.produtos().filter(p => 
+      p.nome.toLowerCase().includes(query) || 
+      (p.descricao && p.descricao.toLowerCase().includes(query))
+    );
+  });
+
+  pagedProdutos = computed(() => {
+    const start = (this.currentPage() - 1) * this.pageSize;
+    const end = start + this.pageSize;
+    return this.filteredProdutos().slice(start, end);
+  });
+
+  totalPages = computed(() => {
+    return Math.ceil(this.filteredProdutos().length / this.pageSize);
+  });
+
+  editingProduto = signal<Produto | null>(null);
 
   ngOnInit(): void {
     this.loadProdutos();
@@ -215,8 +232,7 @@ export class EstoqueComponent implements OnInit {
   }
 
   openAddModal(template: TemplateRef<any>): void {
-    this.editingId.set(null);
-    this.form = { nome: '', descricao: '', preco: 0, quantidadeEstoque: 0 };
+    this.editingProduto.set(null);
     this.dialogService.create({
       zTitle: 'Cadastrar Novo Produto',
       zDescription: 'Preencha as informações para adicionar um item ao estoque.',
@@ -227,13 +243,7 @@ export class EstoqueComponent implements OnInit {
   }
 
   openEditModal(template: TemplateRef<any>, produto: Produto): void {
-    this.editingId.set(produto.id);
-    this.form = { 
-      nome: produto.nome, 
-      descricao: produto.descricao || '', 
-      preco: produto.preco, 
-      quantidadeEstoque: produto.quantidadeEstoque 
-    };
+    this.editingProduto.set(produto);
     this.dialogService.create({
       zTitle: 'Editar Produto',
       zDescription: `Editando informações do produto #${produto.id}.`,
@@ -243,18 +253,13 @@ export class EstoqueComponent implements OnInit {
     });
   }
 
-  salvarProduto(dialogRef: any): void {
-    if (!this.form.nome || this.form.preco < 0 || this.form.quantidadeEstoque < 0) {
-      this.toastService.warning('Campos inválidos', 'Preencha o nome corretamente e garanta que valores não sejam negativos.');
-      return;
-    }
-    
+  salvarProduto(form: CreateProdutoDto, dialogRef: any): void {
     this.saving.set(true);
-    const id = this.editingId();
+    const id = this.editingProduto()?.id;
 
     if (id) {
       // Update
-      this.estoqueService.updateProduto(id, this.form).subscribe({
+      this.estoqueService.updateProduto(id, form).subscribe({
         next: (atualizado) => {
           this.produtos.update(list => list.map(p => p.id === id ? atualizado : p));
           this.toastService.success('Produto atualizado!', `"${atualizado.nome}" foi alterado.`);
@@ -267,7 +272,7 @@ export class EstoqueComponent implements OnInit {
       });
     } else {
       // Create
-      this.estoqueService.createProduto(this.form).subscribe({
+      this.estoqueService.createProduto(form).subscribe({
         next: (novo) => {
           this.produtos.update(list => [...list, novo]);
           this.toastService.success('Produto criado!', `"${novo.nome}" adicionado.`);
@@ -282,8 +287,7 @@ export class EstoqueComponent implements OnInit {
   }
 
   private finishSave(dialogRef: any): void {
-    this.form = { nome: '', descricao: '', preco: 0, quantidadeEstoque: 0 };
-    this.editingId.set(null);
+    this.editingProduto.set(null);
     this.saving.set(false);
     dialogRef.close();
   }
@@ -302,16 +306,5 @@ export class EstoqueComponent implements OnInit {
         this.toastService.error('Erro ao excluir');
       }
     });
-  }
-
-  preventInvalidChars(event: KeyboardEvent): void {
-    // Permite apenas números (códigos de tecla para números do teclado e teclado numérico) e teclas de controle (backspace, setas, etc.)
-    const allowedKeys = ['Backspace', 'ArrowLeft', 'ArrowRight', 'Tab', 'Delete'];
-    if (
-      !allowedKeys.includes(event.key) && 
-      (event.key < '0' || event.key > '9')
-    ) {
-      event.preventDefault();
-    }
   }
 }

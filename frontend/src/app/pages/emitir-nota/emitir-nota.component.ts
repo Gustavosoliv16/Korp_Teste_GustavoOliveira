@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy, inject, signal, computed } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { CurrencyPipe, DecimalPipe } from '@angular/common';
 import { FaturamentoService } from '../../services/faturamento.service';
 import { EstoqueService } from '../../services/estoque.service';
@@ -103,13 +103,17 @@ import {
             <div class="flex flex-col sm:flex-row gap-3 items-end mb-6 bg-muted/30 p-4 rounded-lg">
               <div class="flex-1 space-y-2 w-full">
                 <label class="text-[10px] font-bold uppercase text-muted-foreground">Selecionar Produto</label>
-                <z-select [(ngModel)]="selectedProdutoId" zPlaceholder="Escolha um produto">
+                <select 
+                  [(ngModel)]="selectedProdutoId"
+                  class="w-full h-10 px-3 bg-zinc-900 border border-zinc-800 rounded-md text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary appearance-none cursor-pointer hover:bg-zinc-800/80 transition-colors"
+                >
+                  <option value="" disabled selected>Escolha um produto</option>
                   @for (p of produtos(); track p.id) {
-                    <z-select-item [zValue]="p.id.toString()" [zDisabled]="p.quantidadeEstoque === 0">
-                      {{ p.nome }} ({{ p.preco | currency:'BRL' }})
-                    </z-select-item>
+                    <option [value]="p.id.toString()" [disabled]="p.quantidadeEstoque === 0">
+                      {{ p.nome }} ({{ p.preco | currency:'BRL' }}) - {{ p.quantidadeEstoque }} un.
+                    </option>
                   }
-                </z-select>
+                </select>
               </div>
               <div class="w-full sm:w-24 space-y-2">
                 <label class="text-[10px] font-bold uppercase text-muted-foreground">Qtd</label>
@@ -200,8 +204,8 @@ import {
                 [zLoading]="submitting()"
                 (click)="emitirNota()"
               >
-                <ng-icon name="lucideSend" size="20" class="mr-2" />
-                Emitir Nota
+                <ng-icon [name]="editMode() ? 'lucideSave' : 'lucideSend'" size="20" class="mr-2" />
+                {{ editMode() ? 'Salvar Alterações' : 'Emitir Nota' }}
               </button>
             </div>
           </z-card>
@@ -216,10 +220,14 @@ export class EmitirNotaComponent implements OnInit, OnDestroy {
   private estoqueService = inject(EstoqueService);
   private toastService = inject(ToastService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
   private destroy$ = new Subject<void>();
 
+  editMode = signal(false);
+  editId = signal<number | null>(null);
+
   produtos = signal<Produto[]>([]);
-  itens = signal<{ produtoId: number; quantidade: number; precoUnitario: number }[]>([]);
+  itens = signal<{ produtoId: number; nomeProduto: string; quantidade: number; precoUnitario: number }[]>([]);
   submitting = signal(false);
 
   form = { nomeCliente: '', cpfCnpjCliente: '' };
@@ -237,9 +245,37 @@ export class EmitirNotaComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.carregarProdutos();
+    
+    // Verificar se é edição
+    const idParaEditar = this.route.snapshot.queryParamMap.get('edit');
+    if (idParaEditar) {
+      this.editMode.set(true);
+      this.editId.set(Number(idParaEditar));
+      this.carregarNotaParaEdicao(Number(idParaEditar));
+    }
+  }
+
+  carregarProdutos(): void {
     this.estoqueService.getProdutos().pipe(takeUntil(this.destroy$)).subscribe({
       next: (list) => this.produtos.set(list),
       error: () => this.toastService.error('Erro ao carregar produtos', 'API de Estoque indisponível.')
+    });
+  }
+
+  carregarNotaParaEdicao(id: number): void {
+    this.faturamentoService.getNota(id).subscribe({
+      next: (nota) => {
+        this.form.nomeCliente = nota.nomeCliente;
+        this.form.cpfCnpjCliente = nota.cpfCnpjCliente || '';
+        this.itens.set(nota.itens.map(i => ({
+          produtoId: i.produtoId,
+          nomeProduto: i.nomeProduto,
+          quantidade: i.quantidade,
+          precoUnitario: i.precoUnitario
+        })));
+      },
+      error: () => this.toastService.error('Erro', 'Não foi possível carregar a nota para edição.')
     });
   }
 
@@ -281,6 +317,7 @@ export class EmitirNotaComponent implements OnInit, OnDestroy {
     } else {
       this.itens.update(list => [...list, {
         produtoId: produto.id,
+        nomeProduto: produto.nome,
         quantidade: qtd,
         precoUnitario: produto.preco,
       }]);
@@ -326,22 +363,31 @@ export class EmitirNotaComponent implements OnInit, OnDestroy {
     const dto: CreateNotaFiscalDto = {
       nomeCliente: this.form.nomeCliente,
       cpfCnpjCliente: this.form.cpfCnpjCliente,
-      itens: this.itens(),
+      itens: this.itens().map(i => ({
+        produtoId: i.produtoId,
+        nomeProduto: i.nomeProduto,
+        quantidade: i.quantidade,
+        precoUnitario: i.precoUnitario
+      }))
     };
 
-    this.faturamentoService.criarNota(dto).pipe(takeUntil(this.destroy$)).subscribe({
-      next: (nota) => {
-        this.submitting.set(false);
+    const request$ = this.editMode() 
+      ? this.faturamentoService.atualizarNota(this.editId()!, dto)
+      : this.faturamentoService.criarNota(dto);
+
+    request$.subscribe({
+      next: () => {
         this.toastService.success(
-          `NF-${nota.numeroSequencial.toString().padStart(4, '0')} emitida!`,
-          `Nota criada com sucesso para ${nota.nomeCliente}.`
+          this.editMode() ? 'Nota Atualizada' : 'Nota Emitida', 
+          `A nota fiscal foi ${this.editMode() ? 'atualizada' : 'criada'} com sucesso.`
         );
         this.router.navigate(['/notas-fiscais']);
       },
-      error: () => {
-        this.submitting.set(false);
-        this.toastService.error('Erro ao emitir nota');
-      }
+      error: (err) => {
+        const errorMsg = err?.error?.detail || err?.error || 'Erro ao processar a nota.';
+        this.toastService.error('Erro', errorMsg);
+      },
+      complete: () => this.submitting.set(false)
     });
   }
 }

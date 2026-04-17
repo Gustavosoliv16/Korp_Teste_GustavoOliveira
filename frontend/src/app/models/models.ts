@@ -8,7 +8,7 @@ export interface Produto {
 
 export interface ItemNota {
   produtoId: number;
-  nomeProduto?: string;
+  nomeProduto: string;
   quantidade: number;
   precoUnitario: number;
 }
@@ -21,13 +21,15 @@ export interface NotaFiscal {
   status: 'Aberta' | 'Fechada';
   dataEmissao: string;
   itens: ItemNota[];
+  resumoIA?: string;
+  idempotencyKey?: string;
   valorTotal?: number;
 }
 
 export interface CreateNotaFiscalDto {
   nomeCliente: string;
   cpfCnpjCliente: string;
-  itens: { produtoId: number; quantidade: number; precoUnitario: number }[];
+  itens: { produtoId: number; nomeProduto: string; quantidade: number; precoUnitario: number }[];
 }
 
 export interface CreateProdutoDto {

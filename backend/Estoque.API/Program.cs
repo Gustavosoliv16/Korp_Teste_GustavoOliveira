@@ -11,6 +11,8 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
     });
 
+builder.Services.AddProblemDetails();
+
 // Configurando CORS para permitir o frontend Angular
 builder.Services.AddCors(options => {
     options.AddPolicy("AllowAngular", policy => {
@@ -22,12 +24,13 @@ builder.Services.AddCors(options => {
 
 var app = builder.Build();
 
+app.UseExceptionHandler();
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
 
-// app.UseHttpsRedirection(); // Desabilitado para facilitar desenvolvimento local
 app.UseCors("AllowAngular");
 
 app.MapControllers();

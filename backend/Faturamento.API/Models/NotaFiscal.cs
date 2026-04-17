@@ -24,5 +24,6 @@ namespace Faturamento.API.Models
         public List<ItemNota> Itens { get; set; } = new();
 
         public string? ResumoIA {get; set;}
+        public string? IdempotencyKey { get; set; }
     }
 }

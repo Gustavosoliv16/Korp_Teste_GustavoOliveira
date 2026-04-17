@@ -11,6 +11,8 @@ namespace Faturamento.API.Models
         
         [Required]
         public int ProdutoId { get; set; } 
+
+        public string NomeProduto { get; set; } = string.Empty;
         
         [Required]
         public int Quantidade { get; set; }

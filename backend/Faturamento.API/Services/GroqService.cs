@@ -20,8 +20,8 @@ namespace Faturamento.API.Services
                 - Cliente: {nota.NomeCliente}
                 - Data: {nota.DataEmissao:dd/MM/yyyy}
                 - Valor Total da NF: R$ {valorTotal:F2}
-                - Itens: {string.Join(" | ", nota.Itens.Select(i => $"Produto ID {i.ProdutoId} (qtd: {i.Quantidade}, total do item: R$ {i.Quantidade * i.PrecoUnitario:F2})"))}
-                Seja objetivo, 3 linhas no máximo indicando também o valor total.";
+                - Itens Vendidos: {string.Join(" | ", nota.Itens.Select(i => $"{(string.IsNullOrEmpty(i.NomeProduto) ? "Produto #" + i.ProdutoId : i.NomeProduto)} (qtd: {i.Quantidade}, total: R$ {i.Quantidade * i.PrecoUnitario:F2})"))}
+                Seja objetivo, 3 linhas no máximo mencionando os nomes dos produtos e o valor total.";
 
                 var payload = new
                 {
